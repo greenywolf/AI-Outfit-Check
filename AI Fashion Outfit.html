@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Fashion Outfit Recommender</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --purple-50: #EEEDFE;
+      --purple-100: #CECBF6;
+      --purple-600: #534AB7;
+      --purple-800: #3C3489;
+      --teal-50: #E1F5EE;
+      --teal-700: #0F6E56;
+      --bg: #ffffff;
+      --bg-secondary: #f7f7f5;
+      --bg-tertiary: #f1efe8;
+      --text-primary: #1a1a18;
+      --text-secondary: #5f5e5a;
+      --border: rgba(0,0,0,0.12);
+      --border-md: rgba(0,0,0,0.22);
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+      --font: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1c1c1a;
+        --bg-secondary: #242422;
+        --bg-tertiary: #2c2c2a;
+        --text-primary: #f0eeea;
+        --text-secondary: #a0a09a;
+        --border: rgba(255,255,255,0.1);
+        --border-md: rgba(255,255,255,0.2);
+        --purple-50: #26215C;
+        --purple-100: #3C3489;
+        --teal-50: #04342C;
+        --teal-700: #5DCAA5;
+      }
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--bg);
+      border-bottom: 0.5px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: var(--purple-600);
+      border-radius: var(--radius-md);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .logo-icon i { font-size: 20px; color: var(--purple-50); }
+    .logo-text { font-size: 16px; font-weight: 500; color: var(--text-primary); }
+    .logo-sub { font-size: 12px; color: var(--text-secondary); }
+
+    main {
+      max-width: 720px;
+      margin: 2rem auto;
+      padding: 0 1.5rem 4rem;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .hero h1 { font-size: 28px; font-weight: 500; margin-bottom: 0.4rem; }
+    .hero p { font-size: 15px; color: var(--text-secondary); line-height: 1.6; }
+
+    .form-card {
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 1.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 0.75rem;
+    }
+
+    .form-section { margin-bottom: 1.5rem; }
+    .form-section:last-child { margin-bottom: 0; }
+
+    .pill-group { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .pill {
+      padding: 7px 15px;
+      border-radius: 999px;
+      font-size: 13px;
+      cursor: pointer;
+      border: 0.5px solid var(--border-md);
+      color: var(--text-secondary);
+      background: var(--bg);
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .pill:hover { border-color: var(--purple-600); color: var(--purple-600); }
+    .pill.active {
+      background: var(--purple-600);
+      border-color: var(--purple-600);
+      color: var(--purple-50);
+    }
+
+    .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 500px) { .input-row { grid-template-columns: 1fr; } }
+
+    .input-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      letter-spacing: 0.02em;
+    }
+
+    select, input[type=text] {
+      width: 100%;
+      padding: 9px 12px;
+      font-size: 14px;
+      border: 0.5px solid var(--border-md);
+      border-radius: var(--radius-md);
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: var(--font);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    select:focus, input[type=text]:focus {
+      border-color: var(--purple-600);
+      box-shadow: 0 0 0 3px rgba(83,74,183,0.12);
+    }
+
+    .generate-btn {
+      width: 100%;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 500;
+      border-radius: var(--radius-lg);
+      background: var(--purple-600);
+      color: var(--purple-50);
+      border: none;
+      cursor: pointer;
+      font-family: var(--font);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .generate-btn:hover { opacity: 0.88; }
+    .generate-btn:active { transform: scale(0.98); }
+    .generate-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .divider { border: none; border-top: 0.5px solid var(--border); margin: 2rem 0; }
+
+    .results-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 1rem;
+    }
+
+    .outfit-card {
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .outfit-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .outfit-icon-wrap {
+      width: 48px; height: 48px;
+      border-radius: var(--radius-md);
+      background: var(--purple-50);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .outfit-icon-wrap i { font-size: 24px; color: var(--purple-600); }
+
+    .outfit-name { font-size: 16px; font-weight: 500; margin-bottom: 4px; }
+    .outfit-tag {
+      font-size: 12px;
+      color: var(--purple-600);
+      background: var(--purple-50);
+      padding: 3px 12px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+
+    .pieces-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 8px;
+      margin: 14px 0;
+    }
+
+    .piece-chip {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-md);
+      padding: 9px 11px;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .piece-label {
+      display: block;
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-bottom: 2px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .palette-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 10px 0;
+    }
+    .palette-label { font-size: 12px; color: var(--text-secondary); }
+    .swatches { display: flex; gap: 6px; }
+    .swatch {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      border: 0.5px solid var(--border-md);
+    }
+
+    .why-section {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 0.5px solid var(--border);
+    }
+    .why-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .why-text {
+      font-size: 14px;
+      color: var(--text-primary);
+      line-height: 1.7;
+    }
+    .tip-badge {
+      margin-top: 10px;
+      font-size: 13px;
+      background: var(--teal-50);
+      color: var(--teal-700);
+      padding: 6px 12px;
+      border-radius: var(--radius-md);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      line-height: 1.5;
+    }
+
+    .loading-box {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+    .dots { display: inline-flex; gap: 5px; margin-left: 6px; vertical-align: middle; }
+    .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--purple-600);
+      animation: blink 1.2s infinite;
+    }
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes blink { 0%,80%,100%{opacity:0.25} 40%{opacity:1} }
+
+    .error-box {
+      background: #FCEBEB;
+      color: #A32D2D;
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      font-size: 14px;
+      margin-top: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .regen-btn {
+      width: 100%;
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: var(--radius-lg);
+      background: transparent;
+      color: var(--purple-600);
+      border: 0.5px solid var(--purple-600);
+      cursor: pointer;
+      font-family: var(--font);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.15s;
+      margin-top: 0.5rem;
+    }
+    .regen-btn:hover { background: var(--purple-50); }
+
+    footer {
+      text-align: center;
+      padding: 2rem;
+      font-size: 12px;
+      color: var(--text-secondary);
+      border-top: 0.5px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo-icon"><i class="ti ti-hanger"></i></div>
+  <div>
+    <div class="logo-text">AI Fashion Advisor</div>
+    <div class="logo-sub">Powered by Claude AI</div>
+  </div>
+</header>
+
+<main>
+  <div class="hero">
+    <h1>Your personal style advisor</h1>
+    <p>Tell me about yourself and the occasion — I'll recommend outfits<br>and explain exactly why they work for you.</p>
+  </div>
+
+  <div class="form-card">
+    <div class="form-section">
+      <div class="section-title">Occasion</div>
+      <div class="pill-group" id="occasion-pills">
+        <div class="pill active" data-val="Casual day out">Casual day out</div>
+        <div class="pill" data-val="Work / office">Work / office</div>
+        <div class="pill" data-val="Date night">Date night</div>
+        <div class="pill" data-val="Formal event">Formal event</div>
+        <div class="pill" data-val="Wedding guest">Wedding guest</div>
+        <div class="pill" data-val="Beach / vacation">Beach / vacation</div>
+        <div class="pill" data-val="Festival / party">Festival / party</div>
+        <div class="pill" data-val="Gym / active">Gym / active</div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-title">Season / weather</div>
+      <div class="pill-group" id="season-pills">
+        <div class="pill active" data-val="Spring">🌸 Spring</div>
+        <div class="pill" data-val="Summer">☀️ Summer</div>
+        <div class="pill" data-val="Autumn">🍂 Autumn</div>
+        <div class="pill" data-val="Winter">❄️ Winter</div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-title">Your style vibe</div>
+      <div class="pill-group" id="vibe-pills">
+        <div class="pill active" data-val="Classic & timeless">Classic & timeless</div>
+        <div class="pill" data-val="Minimalist">Minimalist</div>
+        <div class="pill" data-val="Streetwear">Streetwear</div>
+        <div class="pill" data-val="Bohemian">Bohemian</div>
+        <div class="pill" data-val="Preppy">Preppy</div>
+        <div class="pill" data-val="Edgy / alternative">Edgy / alternative</div>
+        <div class="pill" data-val="Romantic / feminine">Romantic / feminine</div>
+        <div class="pill" data-val="Sporty chic">Sporty chic</div>
+      </div>
+    </div>
+    <div class="form-section">
+     <div class="section-title">Gender</div>
+
+     <div class="pill-group" id="gender-pills">
+       <div class="pill active" data-val="Male">Male</div>
+       <div class="pill" data-val="Female">Female</div>
+       <div class="pill" data-val="Unisex">Unisex</div>
+       <div class="pill" data-val="Prefer not to say">
+         Prefer not to say
+      </div>
+    </div>
+  </div>
+
+    <div class="input-row form-section">
+      <div class="input-group">
+        <label>Body type (optional)</label>
+        <select id="body-type">
+          <option value="">Prefer not to say</option>
+          <option>Petite</option>
+          <option>Tall</option>
+          <option>Athletic</option>
+          <option>Curvy / hourglass</option>
+          <option>Pear-shaped</option>
+          <option>Apple-shaped</option>
+          <option>Rectangular</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>Budget range</label>
+        <select id="budget">
+          <option value="budget-friendly">Budget-friendly</option>
+          <option value="mid-range" selected>Mid-range</option>
+          <option value="luxury">Luxury / designer</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-title">Anything else?</div>
+      <input type="text" id="extra-notes" placeholder="e.g. I love earthy tones, I already own white trainers..." />
+    </div>
+
+    <button class="generate-btn" id="gen-btn" onclick="generateOutfits()">
+      <i class="ti ti-wand"></i> Generate my outfits
+    </button>
+  </div>
+
+  <div id="results-area"></div>
+</main>
+
+<footer>
+  AI Fashion Advisor &mdash; Powered by Claude &mdash; Anthropic
+</footer>
+
+<script>
+  function setupPills(groupId) {
+    document.getElementById(groupId).querySelectorAll('.pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        document.getElementById(groupId).querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+      });
+    });
+  }
+setupPills('occasion-pills');
+setupPills('season-pills');
+setupPills('vibe-pills');
+setupPills('gender-pills');
+
+  function getSelected(groupId) {
+    const a = document.querySelector('#' + groupId + ' .pill.active');
+    return a ? a.dataset.val : '';
+  }
+
+  <script>
+async function generateOutfits() {
+
+  const btn = document.getElementById('gen-btn');
+  const results = document.getElementById('results-area');
+
+  const occasion = getSelected('occasion-pills');
+  const season = getSelected('season-pills');
+  const vibe = getSelected('vibe-pills');
+  const gender = getSelected('gender-pills');
+  const body = document.getElementById('body-type').value;
+  const budget = document.getElementById('budget').value;
+  const notes = document.getElementById('extra-notes').value;
+
+  btn.disabled = true;
+
+  btn.innerHTML =
+    '<i class="ti ti-loader-2 ti-spin"></i> Styling your looks...';
+
+  results.innerHTML = `
+      <hr class="divider">
+
+      <div class="loading-box">
+          Crafting 3 personalised outfits for you
+          <span class="dots">
+              <span class="dot"></span>
+              <span class="dot"></span>
+              <span class="dot"></span>
+          </span>
+      </div>
+  `;
+
+  const prompt = `
+You are an expert fashion stylist.
+
+User profile:
+- Occasion: ${occasion}
+- Season: ${season}
+- Style vibe: ${vibe}
+- Gender: ${gender}
+- Body type: ${body || 'not specified'}
+- Budget: ${budget}
+- Additional notes: ${notes || "none"}
+
+Return ONLY valid JSON.
+
+Generate exactly 3 outfit objects.
+
+[
+{
+"name":"short outfit name",
+"tag":"style tag",
+"icon":"shirt",
+"pieces":[
+{
+"label":"Top",
+"item":"specific clothing item"
+},
+{
+"label":"Bottom",
+"item":"specific clothing item"
+},
+{
+"label":"Footwear",
+"item":"specific shoes"
+},
+{
+"label":"Outerwear",
+"item":"jacket/coat or none"
+},
+{
+"label":"Accessory",
+"item":"accessory item"
+}
+],
+"colorPalette":["#111111","#222222","#333333"],
+"why":"Explain specifically why this outfit suits the user including occasion, body type, season and style vibe.",
+"stylistTip":"Short styling tip"
+}
+]
+`;
+
+  try {
+
+    /* Replace with your own API key */
+    const API_KEY = "sk-ant-api03-xxxxxxxxxxxxxxxx";
+
+    const response = await fetch('/generate',{
+   method:'POST',
+   headers:{
+      'Content-Type':'application/json'
+   },
+   body: JSON.stringify({prompt})
+});,
+
+        body: JSON.stringify({
+          model: "claude-3-5-sonnet-latest",
+
+          max_tokens: 1200,
+
+          messages: [
+            {
+              role: "user",
+              content: prompt
+            }
+          ]
+        })
+      }
+    );
+
+    if (!response.ok) {
+
+      const errorText = await response.text();
+
+      throw new Error(
+        `API Error ${response.status}: ${errorText}`
+      );
+    }
+
+    const data = await response.json();
+
+    console.log("Full API response:", data);
+
+    if (!data.content || !Array.isArray(data.content)) {
+      throw new Error(
+        "Unexpected API response format"
+      );
+    }
+
+    const text = data.content
+      .map(item => item.text || '')
+      .join('');
+
+    const cleanText = text
+      .replace(/```json/g, '')
+      .replace(/```/g, '')
+      .trim();
+
+    let outfits;
+
+    try {
+
+      outfits = JSON.parse(cleanText);
+
+    } catch(parseError) {
+
+      console.log("Returned text:");
+      console.log(cleanText);
+
+      throw new Error(
+        "AI returned invalid JSON"
+      );
+    }
+
+    renderOutfits(outfits);
+
+  } catch(err){
+
+    console.error("ERROR DETAILS:",err);
+
+    results.innerHTML=`
+    <hr class="divider">
+
+    <div class="error-box">
+        <div>
+            <strong>Error:</strong><br>
+            ${err.message}
+        </div>
+    </div>
+    `;
+}
+
+  btn.disabled = false;
+
+  btn.innerHTML =
+      '<i class="ti ti-wand"></i> Generate my outfits';
+}
+</script>
+</script>
+</body>
+</html>f
